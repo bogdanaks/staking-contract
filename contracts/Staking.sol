@@ -37,7 +37,7 @@ contract Staking {
     function earned(address _account) internal view returns (uint256 earnedAmount) {
         if (totalSupply == 0) return 0;
 
-        return (balances[_account] / 100 * (rewardPercentage / 1e18) * 1e18) / totalSupply;
+        return ((balances[_account] / 100 * rewardPercentage * 1e18) / totalSupply) / 1e18;
     }
 
     function isGreaterThanRewardTime() internal view returns (bool status) {
@@ -72,10 +72,12 @@ contract Staking {
     }
 
     function updateRewardTime(uint32 _time) external onlyOwner {
+        require(_time > 0, "Time must be greater than zero");
         rewardTime = _time;
     }
 
     function updateRewardPercent(uint256 _percent) external onlyOwner {
+        require(_percent > 0, "Percent must be greater than zero");
         rewardPercentage = _percent;
     }
 }
