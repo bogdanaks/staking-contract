@@ -16,11 +16,12 @@ describe("Staking", function () {
   let lpToken: LPToken;
   let rewardTokenAddress: string;
   let owner: SignerWithAddress;
+  let addr1: SignerWithAddress;
 
   beforeEach(async function () {
     StakingContract = await ethers.getContractFactory("Staking");
     LPToken = await ethers.getContractFactory("LPToken");
-    [owner] = await ethers.getSigners();
+    [owner, addr1] = await ethers.getSigners();
 
     lpToken = await LPToken.deploy();
     staking = await StakingContract.deploy(lpToken.address);
@@ -46,6 +47,30 @@ describe("Staking", function () {
       await expect(staking.claim()).to.be.revertedWith(errorMessage);
     });
 
+    it("Error: Caller not owner", async function () {
+      const errorMessage = "Caller is not the owner";
+
+      const anotherAddressConnect = await staking.connect(addr1);
+
+      await expect(
+        anotherAddressConnect.updateRewardTime(5)
+      ).to.be.revertedWith(errorMessage);
+
+      await expect(
+        anotherAddressConnect.updateRewardPercent(parseEther("0.1"))
+      ).to.be.revertedWith(errorMessage);
+    });
+
+    it("Error: Greater than zero", async function () {
+      await expect(staking.updateRewardTime(0)).to.be.revertedWith(
+        "Time must be greater than zero"
+      );
+
+      await expect(
+        staking.updateRewardPercent(parseEther("0"))
+      ).to.be.revertedWith("Percent must be greater than zero");
+    });
+
     it("Stake LP tokens", async function () {
       await staking.stake(parseEther("1"));
 
@@ -60,7 +85,7 @@ describe("Staking", function () {
 
       const rewards = formatEther(await staking.rewards(owner.address));
 
-      expect(rewards).to.equal("1.0");
+      expect(rewards).to.equal("0.2");
     });
 
     it("Claim rewards", async function () {
@@ -83,7 +108,7 @@ describe("Staking", function () {
         await rewardTokenContract.balanceOf(owner.address)
       );
 
-      expect(balanceRewardsAfter).to.equal("1.0");
+      expect(balanceRewardsAfter).to.equal("0.2");
     });
 
     it("Unstake lp tokens", async function () {
@@ -102,7 +127,27 @@ describe("Staking", function () {
       );
 
       expect(stakeTokensAfter).to.equal("5.0");
-      expect(rewards).to.equal("1.0");
+      expect(rewards).to.equal("0.2");
+    });
+
+    it("Update reward percent", async function () {
+      await staking.updateRewardPercent(parseEther("0.5"));
+      await staking.stake(parseEther("10"));
+      await ethers.provider.send("evm_increaseTime", [60 * 11]);
+      await staking.stake(parseEther("1"));
+
+      const rewards = formatEther(await staking.rewards(owner.address));
+      expect(rewards).to.equal("0.005");
+    });
+
+    it("Update reward time", async function () {
+      await staking.updateRewardTime(60 * 5);
+      await staking.stake(parseEther("10"));
+      await ethers.provider.send("evm_increaseTime", [60 * 6]); // 6 min
+      await staking.stake(parseEther("1"));
+
+      const rewards = formatEther(await staking.rewards(owner.address));
+      expect(rewards).to.equal("0.2");
     });
   });
 });
