@@ -8,13 +8,12 @@ import "./RewardToken.sol";
 contract Staking {
     RewardToken public rewardsToken;
     IERC20 public stakingToken;
+    address public owner;
 
     uint32 public rewardTime = 60 * 10; // 10 min
-    uint256 public rewardPercentage = 100; // 100% every 10min
-    uint256 public rewardPerTokenStored;
+    uint256 public rewardPercentage = 20 * 1e18; // 20% every 10min
     uint256 private totalSupply;
 
-    // mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
     mapping(address => uint256) public balances;
     mapping(address => uint256) private stakeTimes;
@@ -22,22 +21,26 @@ contract Staking {
     constructor(address _stakingToken) {
         stakingToken = IERC20(_stakingToken);
         rewardsToken = new RewardToken();
+        owner = msg.sender;
     }
 
     modifier updateReward(address _account) {
-        uint256 earnAmount = earned(_account);
-        rewards[_account] = earnAmount;
+        rewards[_account] = earned(_account);
         _;
     }
 
-    function earned(address _account) internal view returns (uint256) {
-        if (totalSupply == 0) return 0;
-
-        uint256 balanceStaking = balances[_account];
-        return (balanceStaking / 100 * rewardPercentage * 1e18) / totalSupply;
+    modifier onlyOwner() {
+        require(owner == msg.sender, "Caller is not the owner");
+        _;
     }
 
-    function isGreaterThanRewardTime() internal view returns (bool) {
+    function earned(address _account) internal view returns (uint256 earnedAmount) {
+        if (totalSupply == 0) return 0;
+
+        return (balances[_account] / 100 * (rewardPercentage / 1e18) * 1e18) / totalSupply;
+    }
+
+    function isGreaterThanRewardTime() internal view returns (bool status) {
         return (block.timestamp - stakeTimes[msg.sender] > rewardTime) ? true : false;
     }
 
@@ -66,6 +69,14 @@ contract Staking {
         rewards[msg.sender] = 0;
         rewardsToken.mint(reward);
         rewardsToken.transfer(msg.sender, reward);
+    }
+
+    function updateRewardTime(uint32 _time) external onlyOwner {
+        rewardTime = _time;
+    }
+
+    function updateRewardPercent(uint256 _percent) external onlyOwner {
+        rewardPercentage = _percent;
     }
 }
 
