@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.11;
 
-import "hardhat/console.sol";
-
 import "./RewardToken.sol";
 
 contract Staking {
