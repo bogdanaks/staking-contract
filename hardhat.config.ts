@@ -12,6 +12,9 @@ import "./tasks/claim";
 import "./tasks/unstake";
 import "./tasks/updateRewardTime";
 import "./tasks/updateRewardPercent";
+import "./tasks/addLiquidity";
+import "./tasks/createPair";
+import "./tasks/getPair";
 
 dotenv.config();
 
