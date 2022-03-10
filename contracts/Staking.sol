@@ -13,9 +13,13 @@ contract Staking {
     uint256 public rewardPercentage = 20 * 1e18; // 20% every 10min
     uint256 private totalSupply;
 
-    mapping(address => uint256) public rewards;
-    mapping(address => uint256) public balances;
-    mapping(address => uint256) private stakeTimes;
+    struct StakingData {
+        uint256 rewards; 
+        uint256 balances;
+        uint256 stakeTimes;
+    }
+
+    mapping(address => StakingData) private stakingData;
 
     constructor(address _stakingToken) {
         stakingToken = IERC20(_stakingToken);
@@ -24,7 +28,7 @@ contract Staking {
     }
 
     modifier updateReward(address _account) {
-        rewards[_account] = earned(_account);
+        stakingData[_account].rewards = earned(_account);
         _;
     }
 
@@ -36,36 +40,36 @@ contract Staking {
     function earned(address _account) internal view returns (uint256 earnedAmount) {
         if (totalSupply == 0) return 0;
 
-        return ((balances[_account] / 100 * rewardPercentage * 1e18) / totalSupply) / 1e18;
+        return ((stakingData[_account].balances / 100 * rewardPercentage * 1e18) / totalSupply) / 1e18;
     }
 
     function isGreaterThanRewardTime() internal view returns (bool status) {
-        return (block.timestamp - stakeTimes[msg.sender] > rewardTime) ? true : false;
+        return (block.timestamp - stakingData[msg.sender].stakeTimes > rewardTime) ? true : false;
     }
 
     function stake(uint256 _amount) external updateReward(msg.sender) {
-        stakeTimes[msg.sender] = block.timestamp;
+        stakingData[msg.sender].stakeTimes = block.timestamp;
         totalSupply += _amount;
-        balances[msg.sender] += _amount;
+        stakingData[msg.sender].balances += _amount;
         stakingToken.transferFrom(msg.sender, address(this), _amount);
     }
 
     function unstake(uint256 _amount) external updateReward(msg.sender) {
-        require(balances[msg.sender] >= _amount, "Balance less than amount");
+        require(stakingData[msg.sender].balances >= _amount, "Balance less than amount");
 
-        stakeTimes[msg.sender] = block.timestamp;
+        stakingData[msg.sender].stakeTimes = block.timestamp;
         totalSupply -= _amount;
-        balances[msg.sender] -= _amount;
+        stakingData[msg.sender].balances -= _amount;
         stakingToken.transfer(msg.sender, _amount);
     }
 
     function claim() external updateReward(msg.sender) {
         require(isGreaterThanRewardTime(), "You can claim after available reward time");
 
-        stakeTimes[msg.sender] = block.timestamp;
+        stakingData[msg.sender].stakeTimes = block.timestamp;
 
-        uint256 reward = rewards[msg.sender];
-        rewards[msg.sender] = 0;
+        uint256 reward = stakingData[msg.sender].rewards;
+        stakingData[msg.sender].rewards = 0;
         rewardsToken.mint(reward);
         rewardsToken.transfer(msg.sender, reward);
     }
