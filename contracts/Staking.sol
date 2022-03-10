@@ -55,6 +55,7 @@ contract Staking {
     }
 
     function unstake(uint256 _amount) external updateReward(msg.sender) {
+        require(isGreaterThanRewardTime(), "You can claim after available reward time");
         require(stakingData[msg.sender].balances >= _amount, "Balance less than amount");
 
         stakingData[msg.sender].stakeTimes = block.timestamp;
