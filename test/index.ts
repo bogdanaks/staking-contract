@@ -33,8 +33,19 @@ describe("Staking", function () {
     it("Error balance", async function () {
       const errorMessage = "Balance less than amount";
       await staking.stake(parseEther("10"));
+      await ethers.provider.send("evm_increaseTime", [60 * 11]); // 11 min
 
       await expect(staking.unstake(parseEther("11"))).to.be.revertedWith(
+        errorMessage
+      );
+    });
+
+    it("Error unstake", async function () {
+      const errorMessage = "You can unstake after available reward time";
+      await staking.stake(parseEther("10"));
+      await ethers.provider.send("evm_increaseTime", [60 * 9]); // 9 min
+
+      await expect(staking.unstake(parseEther("5"))).to.be.revertedWith(
         errorMessage
       );
     });
@@ -74,7 +85,9 @@ describe("Staking", function () {
     it("Stake LP tokens", async function () {
       await staking.stake(parseEther("1"));
 
-      const balances = await staking.balances(owner.address);
+      const balances = await (
+        await staking.stakingData(owner.address)
+      ).balances;
       expect(balances).to.equal(parseEther("1"));
     });
 
@@ -83,7 +96,11 @@ describe("Staking", function () {
       await ethers.provider.send("evm_increaseTime", [60 * 11]);
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(await staking.rewards(owner.address));
+      const rewards = formatEther(
+        await (
+          await staking.stakingData(owner.address)
+        ).rewards
+      );
 
       expect(rewards).to.equal("0.2");
     });
@@ -115,15 +132,26 @@ describe("Staking", function () {
       await staking.stake(parseEther("10"));
       await ethers.provider.send("evm_increaseTime", [60 * 11]);
       await staking.stake(parseEther("1"));
-      const stakeTokens = formatEther(await staking.balances(owner.address));
-      const rewards = formatEther(await staking.rewards(owner.address));
+      const stakeTokens = formatEther(
+        await (
+          await staking.stakingData(owner.address)
+        ).balances
+      );
+      const rewards = formatEther(
+        await (
+          await staking.stakingData(owner.address)
+        ).rewards
+      );
 
       expect(stakeTokens).to.equal("11.0");
 
+      await ethers.provider.send("evm_increaseTime", [60 * 11]); // 11 min
       await staking.unstake(parseEther("6"));
 
       const stakeTokensAfter = formatEther(
-        await staking.balances(owner.address)
+        await (
+          await staking.stakingData(owner.address)
+        ).balances
       );
 
       expect(stakeTokensAfter).to.equal("5.0");
@@ -136,7 +164,11 @@ describe("Staking", function () {
       await ethers.provider.send("evm_increaseTime", [60 * 11]);
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(await staking.rewards(owner.address));
+      const rewards = formatEther(
+        await (
+          await staking.stakingData(owner.address)
+        ).rewards
+      );
       expect(rewards).to.equal("0.005");
     });
 
@@ -146,7 +178,11 @@ describe("Staking", function () {
       await ethers.provider.send("evm_increaseTime", [60 * 6]); // 6 min
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(await staking.rewards(owner.address));
+      const rewards = formatEther(
+        await (
+          await staking.stakingData(owner.address)
+        ).rewards
+      );
       expect(rewards).to.equal("0.2");
     });
   });
