@@ -19,7 +19,7 @@ contract Staking {
         uint256 stakeTimes;
     }
 
-    mapping(address => StakingData) private stakingData;
+    mapping(address => StakingData) public stakingData;
 
     constructor(address _stakingToken) {
         stakingToken = IERC20(_stakingToken);
@@ -55,7 +55,7 @@ contract Staking {
     }
 
     function unstake(uint256 _amount) external updateReward(msg.sender) {
-        require(isGreaterThanRewardTime(), "You can claim after available reward time");
+        require(isGreaterThanRewardTime(), "You can unstake after available reward time");
         require(stakingData[msg.sender].balances >= _amount, "Balance less than amount");
 
         stakingData[msg.sender].stakeTimes = block.timestamp;
