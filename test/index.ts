@@ -17,6 +17,7 @@ describe("Staking", function () {
   let rewardTokenAddress: string;
   let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
+  const PERSENTAGE = 10000;
 
   beforeEach(async function () {
     StakingContract = await ethers.getContractFactory("Staking");
@@ -96,13 +97,9 @@ describe("Staking", function () {
       await ethers.provider.send("evm_increaseTime", [60 * 11]);
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(
-        await (
-          await staking.stakingData(owner.address)
-        ).rewards
-      );
+      const rewards = await (await staking.stakingData(owner.address)).rewards;
 
-      expect(rewards).to.equal("0.2");
+      expect(rewards.toNumber() / PERSENTAGE).to.equal(0.2);
     });
 
     it("Claim rewards", async function () {
@@ -113,19 +110,15 @@ describe("Staking", function () {
         rewardTokenAddress
       );
 
-      const balanceRewards = formatEther(
-        await rewardTokenContract.balanceOf(owner.address)
-      );
-
-      expect(balanceRewards).to.equal("0.0");
+      const balanceRewards = await rewardTokenContract.balanceOf(owner.address);
+      expect(balanceRewards.toNumber() / PERSENTAGE).to.equal(0);
 
       await staking.claim();
 
-      const balanceRewardsAfter = formatEther(
-        await rewardTokenContract.balanceOf(owner.address)
+      const balanceRewardsAfter = await rewardTokenContract.balanceOf(
+        owner.address
       );
-
-      expect(balanceRewardsAfter).to.equal("0.2");
+      expect(balanceRewardsAfter.toNumber() / PERSENTAGE).to.equal(0.2);
     });
 
     it("Unstake lp tokens", async function () {
@@ -137,12 +130,7 @@ describe("Staking", function () {
           await staking.stakingData(owner.address)
         ).balances
       );
-      const rewards = formatEther(
-        await (
-          await staking.stakingData(owner.address)
-        ).rewards
-      );
-
+      const rewards = await (await staking.stakingData(owner.address)).rewards;
       expect(stakeTokens).to.equal("11.0");
 
       await ethers.provider.send("evm_increaseTime", [60 * 11]); // 11 min
@@ -155,21 +143,17 @@ describe("Staking", function () {
       );
 
       expect(stakeTokensAfter).to.equal("5.0");
-      expect(rewards).to.equal("0.2");
+      expect(rewards.toNumber() / PERSENTAGE).to.equal(0.2);
     });
 
     it("Update reward percent", async function () {
-      await staking.updateRewardPercent(parseEther("0.5"));
+      await staking.updateRewardPercent(0.5 * PERSENTAGE);
       await staking.stake(parseEther("10"));
       await ethers.provider.send("evm_increaseTime", [60 * 11]);
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(
-        await (
-          await staking.stakingData(owner.address)
-        ).rewards
-      );
-      expect(rewards).to.equal("0.005");
+      const rewards = await (await staking.stakingData(owner.address)).rewards;
+      expect(rewards.toNumber() / PERSENTAGE).to.equal(0.005);
     });
 
     it("Update reward time", async function () {
@@ -178,12 +162,8 @@ describe("Staking", function () {
       await ethers.provider.send("evm_increaseTime", [60 * 6]); // 6 min
       await staking.stake(parseEther("1"));
 
-      const rewards = formatEther(
-        await (
-          await staking.stakingData(owner.address)
-        ).rewards
-      );
-      expect(rewards).to.equal("0.2");
+      const rewards = await (await staking.stakingData(owner.address)).rewards;
+      expect(rewards.toNumber() / PERSENTAGE).to.equal(0.2);
     });
   });
 });
