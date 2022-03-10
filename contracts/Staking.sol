@@ -10,7 +10,7 @@ contract Staking {
     address public owner;
 
     uint32 public rewardTime = 60 * 10; // 10 min
-    uint256 public rewardPercentage = 20 * 1e18; // 20% every 10min
+    uint256 public rewardPercentage = 20 * 10000; // 20% every 10min
     uint256 private totalSupply;
 
     struct StakingData {
@@ -40,7 +40,7 @@ contract Staking {
     function earned(address _account) internal view returns (uint256 earnedAmount) {
         if (totalSupply == 0) return 0;
 
-        return ((stakingData[_account].balances / 100 * rewardPercentage * 1e18) / totalSupply) / 1e18;
+        return ((stakingData[_account].balances / 100 * rewardPercentage) / totalSupply);
     }
 
     function isGreaterThanRewardTime() internal view returns (bool status) {
